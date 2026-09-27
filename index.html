@@ -3,42 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>전기기능사 기출 모의고사</title>
+  <title>전기기능사 C B T 모의고사</title>
   <!-- KaTeX 수식 렌더링 라이브러리 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
   
   <style>
     * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; margin: 0; padding: 0; }
     body { background-color: #f4f6f9; color: #333; padding: 15px; display: flex; justify-content: center; }
-    .container { width: 100%; max-width: 600px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+    .container { width: 100%; max-width: 650px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); position: relative; }
+    
+    /* 모드 선택 모달 */
+    .setup-modal { position: absolute; top:0; left:0; width:100%; height:100%; background: #fff; z-index: 100; border-radius: 12px; padding: 30px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+    .setup-title { font-size: 1.4rem; font-weight: bold; color: #2c3e50; text-align: center; }
+    .setup-group { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+    .setup-label { font-weight: bold; font-size: 0.95rem; color: #555; }
+    .setup-select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
+    .start-btn { width: 100%; max-width: 320px; padding: 14px; background: #3498db; color: #fff; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    .start-btn:hover { background: #2980b9; }
+
+    /* 헤더 & 타이머 */
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-    .title { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
-    .q-number { font-size: 1rem; font-weight: bold; color: #3498db; }
-    .question { font-size: 1.05rem; line-height: 1.5; margin-bottom: 15px; font-weight: 600; }
+    .title { font-size: 1rem; font-weight: bold; color: #2c3e50; }
+    .timer { font-size: 1.1rem; font-weight: bold; color: #e74c3c; background: #fdf2f2; padding: 4px 10px; border-radius: 6px; }
+    .omr-toggle-btn { padding: 6px 12px; background: #2c3e50; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+
+    /* 문제 영역 */
+    .q-info { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .q-number { font-size: 1.1rem; font-weight: bold; color: #3498db; }
+    .question { font-size: 1.05rem; line-height: 1.5; margin-bottom: 15px; font-weight: 600; min-height: 50px; }
     .passage { background: #f8f9fa; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 15px; font-size: 0.95rem; }
+    
+    /* 선택지 */
     .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
     .opt-btn { width: 100%; text-align: left; padding: 12px 15px; border: 1px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
     .opt-btn:hover { background: #eef6fc; border-color: #3498db; }
     .opt-btn.selected { background: #3498db; color: #fff; border-color: #3498db; }
+
+    /* 결과 박스 (연습모드 전용) */
     .result-box { display: none; background: #eef9f1; border: 1px solid #2ecc71; padding: 15px; border-radius: 8px; margin-top: 15px; }
     .result-box.incorrect { background: #fdf2f2; border-color: #e74c3c; }
     .explanation { margin-top: 8px; font-size: 0.9rem; color: #555; line-height: 1.4; }
-    .nav-btns { display: flex; justify-content: space-between; margin-top: 20px; }
-    .btn { padding: 10px 20px; border: none; background: #2c3e50; color: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+    /* 하단 이동 버튼 */
+    .nav-btns { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+    .btn { padding: 10px 18px; border: none; background: #2c3e50; color: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .submit-btn { background: #e74c3c; }
+
+    /* OMR 드로어 (시험모드 전용) */
+    .omr-drawer { display: none; position: absolute; top:0; right:0; width: 100%; height:100%; background: #fff; z-index: 90; border-radius: 12px; padding: 20px; overflow-y: auto; }
+    .omr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    .omr-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .omr-item { border: 1px solid #ddd; padding: 8px; border-radius: 6px; text-align: center; cursor: pointer; font-size: 0.85rem; background: #f9f9f9; }
+    .omr-item.answered { background: #3498db; color: #fff; border-color: #3498db; }
+    .omr-item.current { border: 2px solid #2c3e50; font-weight: bold; }
   </style>
 </head>
 <body>
 
 <div class="container">
+  <!-- 1. 회차 및 모드 선택 모달 -->
+  <div class="setup-modal" id="setup-modal">
+    <div class="setup-title">⚡ 전기기능사 모의고사</div>
+    
+    <div class="setup-group">
+      <label class="setup-label">시험 회차 선택</label>
+      <select class="setup-select" id="exam-select">
+        <option value="ALL">전체 문제 (통합)</option>
+      </select>
+    </div>
+
+    <div class="setup-group">
+      <label class="setup-label">풀이 모드 선택</label>
+      <select class="setup-select" id="mode-select">
+        <option value="practice">연습 모드 (즉시 정답/해설 확인)</option>
+        <option value="exam">실전 시험 모드 (타이머 & OMR 제출)</option>
+      </select>
+    </div>
+
+    <button class="start-btn" onclick="startApp()">시험 시작하기</button>
+  </div>
+
+  <!-- 2. 메인 문제 풀이 UI -->
   <div class="header">
-    <span class="title" id="exam-title">로딩 중...</span>
+    <span class="title" id="exam-title">전기기능사</span>
+    <span class="timer" id="timer-display" style="display:none;">60:00</span>
+    <button class="omr-toggle-btn" id="omr-btn" onclick="toggleOMR()" style="display:none;">OMR 답안지</button>
+  </div>
+
+  <div class="q-info">
     <span class="q-number" id="q-idx">Q 0/0</span>
   </div>
 
-  <div class="question" id="q-text">문제를 불러오는 중입니다...</div>
+  <div class="question" id="q-text">문제를 로딩하는 중입니다...</div>
   <div class="passage" id="q-passage" style="display:none;"></div>
 
   <div class="options" id="opt-container">
@@ -55,74 +114,127 @@
 
   <div class="nav-btns">
     <button class="btn" id="prev-btn" onclick="prevQuestion()" disabled>이전 문제</button>
+    <button class="btn submit-btn" id="submit-btn" onclick="finishExam()" style="display:none;">최종 제출</button>
     <button class="btn" id="next-btn" onclick="nextQuestion()">다음 문제</button>
+  </div>
+
+  <!-- 3. OMR 답안지 드로어 (시험 모드용) -->
+  <div class="omr-drawer" id="omr-drawer">
+    <div class="omr-header">
+      <h3>OMR 답안 현황</h3>
+      <button class="btn" onclick="toggleOMR()">닫기</button>
+    </div>
+    <div class="omr-grid" id="omr-grid"></div>
   </div>
 </div>
 
 <script>
-  // 구글 Apps Script 배포 URL 주소를 입력하세요
-  const API_URL = "https://script.google.com/macros/s/AKfycbxXn6JO5GfAKjzRpRHD8O1oLDRmYXaYySVcuKcar8P0syLJaB4un-T_R5zIte5vkC8Wvg/exec";
+  // 구글 Apps Script 배포 URL
+  const API_URL = "https://script.google.com/macros/s/AKfycbyfEomEiaJ6WnI50Zt-S95k8i4504A9IqP_eB_8vP3iS_c3a-A/exec";
 
-  let questions = [];
+  let allQuestions = [];
+  let currentQuestions = [];
   let currentIndex = 0;
   let userAnswers = {};
+  let currentMode = "practice";
+  let timerInterval = null;
+  let timeLeft = 3600; // 60분 (초 단위)
 
-  // 데이터 로드
+  // 데이터 최초 로드 및 회차 목록 동적 구성
   async function fetchQuestions() {
     try {
       const res = await fetch(API_URL);
       const json = await res.json();
       if(json.status === "success") {
-        questions = json.data;
-        renderQuestion();
+        allQuestions = json.data;
+        
+        // 시트 내 시험명 목록 중복 제거 추출
+        const examTitles = [...new Set(allQuestions.map(q => q.exam_title))].filter(Boolean);
+        const examSelect = document.getElementById('exam-select');
+        examSelect.innerHTML = '<option value="ALL">전체 문제 (통합)</option>';
+        examTitles.forEach(title => {
+          const opt = document.createElement('option');
+          opt.value = title;
+          opt.innerText = title;
+          examSelect.appendChild(opt);
+        });
       }
     } catch(e) {
       document.getElementById('q-text').innerText = "데이터를 불러오는 중 오류가 발생했습니다.";
     }
   }
 
-  // 화면 출력
+  // 모드 및 회차 확정 후 시작
+  function startApp() {
+    const selectedExam = document.getElementById('exam-select').value;
+    currentMode = document.getElementById('mode-select').value;
+
+    if(selectedExam === "ALL") {
+      currentQuestions = allQuestions;
+    } else {
+      currentQuestions = allQuestions.filter(q => q.exam_title === selectedExam);
+    }
+
+    if(currentQuestions.length === 0) {
+      alert("선택한 회차의 문제가 없습니다.");
+      return;
+    }
+
+    document.getElementById('setup-modal').style.display = 'none';
+    currentIndex = 0;
+    userAnswers = {};
+
+    if(currentMode === "exam") {
+      document.getElementById('timer-display').style.display = 'block';
+      document.getElementById('omr-btn').style.display = 'block';
+      document.getElementById('submit-btn').style.display = 'block';
+      startTimer();
+    } else {
+      document.getElementById('timer-display').style.display = 'none';
+      document.getElementById('omr-btn').style.display = 'none';
+      document.getElementById('submit-btn').style.display = 'none';
+    }
+
+    renderQuestion();
+    renderOMRGrid();
+  }
+
+  // 문제 렌더링
   function renderQuestion() {
-    if(questions.length === 0) return;
+    const q = currentQuestions[currentIndex];
+    document.getElementById('exam-title').innerText = q.exam_title || "전기기능사";
+    document.getElementById('q-idx').innerText = `Q ${currentIndex + 1}/${currentQuestions.length}`;
+    document.getElementById('q-text').innerHTML = `${q.q_no || (currentIndex + 1)}. ${q.question}`;
 
-    const q = questions[currentIndex];
-    document.getElementById('exam-title').innerText = q.exam_title;
-    document.getElementById('q-idx').innerText = `Q ${currentIndex + 1}/${questions.length}`;
-    document.getElementById('q-text').innerHTML = `${q.q_no}. ${q.question}`;
-
-    // 지문 유무 처리
     const passageEl = document.getElementById('q-passage');
-    if(q.passage && q.passage.trim() !== "") {
+    if(q.passage && String(q.passage).trim() !== "") {
       passageEl.innerHTML = q.passage;
       passageEl.style.display = "block";
     } else {
       passageEl.style.display = "none";
     }
 
-    // 선택지 등록
     document.getElementById('opt1').innerHTML = `① ${q.opt1}`;
     document.getElementById('opt2').innerHTML = `② ${q.opt2}`;
     document.getElementById('opt3').innerHTML = `③ ${q.opt3}`;
     document.getElementById('opt4').innerHTML = `④ ${q.opt4}`;
 
-    // 이전 상태 초기화
     document.querySelectorAll('.opt-btn').forEach(btn => btn.classList.remove('selected'));
     document.getElementById('result-box').style.display = "none";
 
-    // 풀었던 문제 복원
+    // 풀었던 정답 상태 복원
     if(userAnswers[currentIndex]) {
       selectOption(userAnswers[currentIndex], false);
     }
 
-    // 버튼 활성화 처리
     document.getElementById('prev-btn').disabled = (currentIndex === 0);
-    document.getElementById('next-btn').disabled = (currentIndex === questions.length - 1);
+    document.getElementById('next-btn').disabled = (currentIndex === currentQuestions.length - 1);
 
-    // LaTeX 수식 변환 적용
     renderMath();
+    updateOMRGridStatus();
   }
 
-  // 답 선택 처리
+  // 답안 선택 처리
   function selectOption(optNum, isUserClick = true) {
     if(isUserClick) userAnswers[currentIndex] = optNum;
 
@@ -131,34 +243,114 @@
       else btn.classList.remove('selected');
     });
 
-    const q = questions[currentIndex];
-    const resultBox = document.getElementById('result-box');
-    const resultText = document.getElementById('result-text');
-    const expText = document.getElementById('exp-text');
+    // 연습모드인 경우에만 즉시 채점/해설 노출
+    if(currentMode === "practice") {
+      const q = currentQuestions[currentIndex];
+      const resultBox = document.getElementById('result-box');
+      const resultText = document.getElementById('result-text');
+      const expText = document.getElementById('exp-text');
 
-    if(String(optNum) === String(q.ans)) {
-      resultBox.className = "result-box";
-      resultText.innerText = "⭕ 정답입니다!";
-    } else {
-      resultBox.className = "result-box incorrect";
-      resultText.innerText = `❌ 오답입니다. (정답: ${q.ans}번)`;
+      if(String(optNum) === String(q.ans)) {
+        resultBox.className = "result-box";
+        resultText.innerText = "⭕ 정답입니다!";
+      } else {
+        resultBox.className = "result-box incorrect";
+        resultText.innerText = `❌ 오답입니다. (정답: ${q.ans}번)`;
+      }
+
+      expText.innerHTML = `<strong>해설:</strong> ${q.exp || '해설이 없습니다.'}`;
+      resultBox.style.display = "block";
+      renderMath();
     }
 
-    expText.innerHTML = `<strong>해설:</strong> ${q.exp || '해설이 없습니다.'}`;
-    resultBox.style.display = "block";
-
-    renderMath();
+    updateOMRGridStatus();
   }
 
-  function prevQuestion() {
-    if(currentIndex > 0) { currentIndex--; renderQuestion(); }
+  // 이전/다음 이동
+  function prevQuestion() { if(currentIndex > 0) { currentIndex--; renderQuestion(); } }
+  function nextQuestion() { if(currentIndex < currentQuestions.length - 1) { currentIndex++; renderQuestion(); } }
+
+  // OMR 그리드 생성 및 상태 반영
+  function renderOMRGrid() {
+    const grid = document.getElementById('omr-grid');
+    grid.innerHTML = "";
+    currentQuestions.forEach((_, idx) => {
+      const item = document.createElement('div');
+      item.className = "omr-item";
+      item.id = `omr-item-${idx}`;
+      item.innerText = `${idx + 1}`;
+      item.onclick = () => {
+        currentIndex = idx;
+        renderQuestion();
+        toggleOMR();
+      };
+      grid.appendChild(item);
+    });
   }
 
-  function nextQuestion() {
-    if(currentIndex < questions.length - 1) { currentIndex++; renderQuestion(); }
+  function updateOMRGridStatus() {
+    currentQuestions.forEach((_, idx) => {
+      const item = document.getElementById(`omr-item-${idx}`);
+      if(item) {
+        if(userAnswers[idx]) item.classList.add('answered');
+        else item.classList.remove('answered');
+
+        if(idx === currentIndex) item.classList.add('current');
+        else item.classList.remove('current');
+      }
+    });
   }
 
-  // KaTeX 수식 변환 함수 ($...$ 문법 지원)
+  function toggleOMR() {
+    const drawer = document.getElementById('omr-drawer');
+    drawer.style.display = (drawer.style.display === 'block') ? 'none' : 'block';
+  }
+
+  // 실전 모드 타이머
+  function startTimer() {
+    timeLeft = 3600;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      const min = Math.floor(timeLeft / 60);
+      const sec = timeLeft % 60;
+      document.getElementById('timer-display').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+
+      if(timeLeft <= 0) {
+        clearInterval(timerInterval);
+        alert("시험 시간이 종료되었습니다. 자동으로 제출합니다.");
+        finishExam();
+      }
+    }, 1000);
+  }
+
+  // 시험 최종 제출 처리
+  function finishExam() {
+    if(!confirm("시험을 최종 제출하시겠습니까?")) return;
+
+    clearInterval(timerInterval);
+    let score = 0;
+    let correctCount = 0;
+
+    currentQuestions.forEach((q, idx) => {
+      if(String(userAnswers[idx]) === String(q.ans)) {
+        correctCount++;
+      }
+    });
+
+    score = Math.round((correctCount / currentQuestions.length) * 100);
+    const isPass = score >= 60;
+
+    alert(`[시험 결과]\n\n맞은 개수: ${correctCount} / ${currentQuestions.length}\n점수: ${score}점\n결과: ${isPass ? '🎉 합격입니다!' : '😭 불합격입니다.'}`);
+    
+    // 연습모드로 전환하여 해설 확인 가능하게 변경
+    currentMode = "practice";
+    document.getElementById('timer-display').style.display = 'none';
+    document.getElementById('submit-btn').style.display = 'none';
+    renderQuestion();
+  }
+
+  // KaTeX 수식 변환
   function renderMath() {
     setTimeout(() => {
       if(window.renderMathInElement) {

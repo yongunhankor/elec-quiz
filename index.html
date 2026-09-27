@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>전기기능사 기출 모의고사</title>
+  <!-- KaTeX 수식 렌더링 라이브러리 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f4f6f9; color: #333; padding: 15px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 600px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+    .title { font-size: 1.1rem; font-weight: bold; color: #2c3e50; }
+    .q-number { font-size: 1rem; font-weight: bold; color: #3498db; }
+    .question { font-size: 1.05rem; line-height: 1.5; margin-bottom: 15px; font-weight: 600; }
+    .passage { background: #f8f9fa; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 15px; font-size: 0.95rem; }
+    .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .opt-btn { width: 100%; text-align: left; padding: 12px 15px; border: 1px solid #ddd; background: #fff; border-radius: 8px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+    .opt-btn:hover { background: #eef6fc; border-color: #3498db; }
+    .opt-btn.selected { background: #3498db; color: #fff; border-color: #3498db; }
+    .result-box { display: none; background: #eef9f1; border: 1px solid #2ecc71; padding: 15px; border-radius: 8px; margin-top: 15px; }
+    .result-box.incorrect { background: #fdf2f2; border-color: #e74c3c; }
+    .explanation { margin-top: 8px; font-size: 0.9rem; color: #555; line-height: 1.4; }
+    .nav-btns { display: flex; justify-content: space-between; margin-top: 20px; }
+    .btn { padding: 10px 20px; border: none; background: #2c3e50; color: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="title" id="exam-title">로딩 중...</span>
+    <span class="q-number" id="q-idx">Q 0/0</span>
+  </div>
+
+  <div class="question" id="q-text">문제를 불러오는 중입니다...</div>
+  <div class="passage" id="q-passage" style="display:none;"></div>
+
+  <div class="options" id="opt-container">
+    <button class="opt-btn" onclick="selectOption(1)" id="opt1">① 선택지 1</button>
+    <button class="opt-btn" onclick="selectOption(2)" id="opt2">② 선택지 2</button>
+    <button class="opt-btn" onclick="selectOption(3)" id="opt3">③ 선택지 3</button>
+    <button class="opt-btn" onclick="selectOption(4)" id="opt4">④ 선택지 4</button>
+  </div>
+
+  <div class="result-box" id="result-box">
+    <strong id="result-text">⭕ 정답입니다!</strong>
+    <div class="explanation" id="exp-text"></div>
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn" id="prev-btn" onclick="prevQuestion()" disabled>이전 문제</button>
+    <button class="btn" id="next-btn" onclick="nextQuestion()">다음 문제</button>
+  </div>
+</div>
+
+<script>
+  // 구글 Apps Script 배포 URL 주소를 입력하세요
+  const API_URL = "https://script.google.com/macros/s/AKfycbxXn6JO5GfAKjzRpRHD8O1oLDRmYXaYySVcuKcar8P0syLJaB4un-T_R5zIte5vkC8Wvg/exec";
+
+  let questions = [];
+  let currentIndex = 0;
+  let userAnswers = {};
+
+  // 데이터 로드
+  async function fetchQuestions() {
+    try {
+      const res = await fetch(API_URL);
+      const json = await res.json();
+      if(json.status === "success") {
+        questions = json.data;
+        renderQuestion();
+      }
+    } catch(e) {
+      document.getElementById('q-text').innerText = "데이터를 불러오는 중 오류가 발생했습니다.";
+    }
+  }
+
+  // 화면 출력
+  function renderQuestion() {
+    if(questions.length === 0) return;
+
+    const q = questions[currentIndex];
+    document.getElementById('exam-title').innerText = q.exam_title;
+    document.getElementById('q-idx').innerText = `Q ${currentIndex + 1}/${questions.length}`;
+    document.getElementById('q-text').innerHTML = `${q.q_no}. ${q.question}`;
+
+    // 지문 유무 처리
+    const passageEl = document.getElementById('q-passage');
+    if(q.passage && q.passage.trim() !== "") {
+      passageEl.innerHTML = q.passage;
+      passageEl.style.display = "block";
+    } else {
+      passageEl.style.display = "none";
+    }
+
+    // 선택지 등록
+    document.getElementById('opt1').innerHTML = `① ${q.opt1}`;
+    document.getElementById('opt2').innerHTML = `② ${q.opt2}`;
+    document.getElementById('opt3').innerHTML = `③ ${q.opt3}`;
+    document.getElementById('opt4').innerHTML = `④ ${q.opt4}`;
+
+    // 이전 상태 초기화
+    document.querySelectorAll('.opt-btn').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('result-box').style.display = "none";
+
+    // 풀었던 문제 복원
+    if(userAnswers[currentIndex]) {
+      selectOption(userAnswers[currentIndex], false);
+    }
+
+    // 버튼 활성화 처리
+    document.getElementById('prev-btn').disabled = (currentIndex === 0);
+    document.getElementById('next-btn').disabled = (currentIndex === questions.length - 1);
+
+    // LaTeX 수식 변환 적용
+    renderMath();
+  }
+
+  // 답 선택 처리
+  function selectOption(optNum, isUserClick = true) {
+    if(isUserClick) userAnswers[currentIndex] = optNum;
+
+    document.querySelectorAll('.opt-btn').forEach((btn, idx) => {
+      if(idx + 1 === optNum) btn.classList.add('selected');
+      else btn.classList.remove('selected');
+    });
+
+    const q = questions[currentIndex];
+    const resultBox = document.getElementById('result-box');
+    const resultText = document.getElementById('result-text');
+    const expText = document.getElementById('exp-text');
+
+    if(String(optNum) === String(q.ans)) {
+      resultBox.className = "result-box";
+      resultText.innerText = "⭕ 정답입니다!";
+    } else {
+      resultBox.className = "result-box incorrect";
+      resultText.innerText = `❌ 오답입니다. (정답: ${q.ans}번)`;
+    }
+
+    expText.innerHTML = `<strong>해설:</strong> ${q.exp || '해설이 없습니다.'}`;
+    resultBox.style.display = "block";
+
+    renderMath();
+  }
+
+  function prevQuestion() {
+    if(currentIndex > 0) { currentIndex--; renderQuestion(); }
+  }
+
+  function nextQuestion() {
+    if(currentIndex < questions.length - 1) { currentIndex++; renderQuestion(); }
+  }
+
+  // KaTeX 수식 변환 함수 ($...$ 문법 지원)
+  function renderMath() {
+    setTimeout(() => {
+      if(window.renderMathInElement) {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false}
+          ]
+        });
+      }
+    }, 50);
+  }
+
+  window.onload = fetchQuestions;
+</script>
+</body>
+</html>

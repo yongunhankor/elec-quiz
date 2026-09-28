@@ -1,5 +1,5 @@
 // 앱 화면(정적 파일)을 캐시해서 오프라인/빠른 실행을 지원합니다. 데이터(시트)는 앱 코드가 별도로 캐시합니다.
-const CACHE = 'exam-shell-v1';
+const CACHE = 'exam-shell-v2';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
